@@ -1,0 +1,173 @@
+%Name: Noah Bae
+%Assignment: 11
+%Date: 3.22.22
+
+%Exercise 4.1
+
+%Exercise 4.2
+twins(Child1, Child2) :-
+family(_,_,Children),
+del(Child1, Children, Restofchildren),
+member2(Child,Restofchildren), 
+dateofbirth(Child1,D1) =:= dateofbirth(Child2,D2).
+
+
+
+
+del( X, [X|Tail], Tail).
+del( X, [Y|Tail], [Y|Tail1]) :-
+   del( X, Tail, Tail1).
+
+member2( X, List) :-
+   del( X, List, _).
+
+
+
+% Figure 4.1
+% Structuring information about the family.
+
+family(
+   person( tom, fox, date( 7, may, 1960), works( bbc, 15200) ),
+   person( ann, fox, date( 9, may, 1961), unemployed),
+   [person( pat, fox, date( 5, may, 1983), unemployed),
+    person( jim, fox, date( 5, may, 1983), unemployed) ] ).
+family(
+   person( henry, stern, date( 7, may, 1960), unemployed),
+   person( beth, stern, date( 9, may, 1961), works( microsoft, 15200)),
+   [person( joe, stern, date( 6, june, 1985), works( mcdonalds, 9000)),
+   person( jeff, stern, date( 4, july, 1986), works( arbys, 10000)) ] ).
+
+% X is a husband
+husband( X) :-
+   family( X, _, _).
+
+/*
+Query: All the husbands
+husband( X).
+*/
+
+% X is a wife
+wife( X) :-
+   family( _, X, _).
+
+/*
+Query: All the wives
+wife( X).
+
+Query: All the employed wives
+wife( person( Name, Surname, _, works( _, _))).
+
+Query: All the unemployed husbands
+husband( person( Name, Surname, _, unemployed)).
+*/
+
+% X is a child
+child( X) :-
+   family( _, _, Children),
+   member( X, Children).
+
+/*
+Query: All the children
+child( X).
+
+Query attempt: All the people
+person( X).
+*/
+
+% Any person in the database
+exists( Person) :-
+   husband( Person)
+   ;
+   wife( Person)
+   ;
+   child( Person).
+
+/*
+Query: All the people
+exists( P).
+
+Query: The names of all the people in the database
+exists( person( Name, Surname, _, _)).
+*/
+
+% Birthdate
+% dateofbirth( P, D)
+% D is the date of birth of person P
+dateofbirth( person( _, _, Date, _), Date).
+
+/*
+Query: All the children born in 1983.
+child( X), dateofbirth( X, date( _, _, 1983)).
+
+Query: The birtdate of tom fox
+exists( P), P = person( tom, fox, _, _), dateofbirth( P, D).
+*/
+
+% Salary of working person
+% salary( P, S)
+% S is the salary of person P, 0 if unemployed
+salary( person( _, _, _, works( _, S) ), S).
+salary( person( _, _, _, unemployed), 0).
+
+/*
+Query: The salary of tom fox
+exists( P), P = person( tom, fox, _, _), salary( P, S).
+
+Query: The salary of ann fox
+exists( P), P = person( ann, fox, _, _), salary( P, S).
+
+Query: Names of all the unemployed people born before 1973
+exists( person( Name, Surname, date( _, _, Year), unemployed)), Year < 1973.
+
+Query: People born before 1970, whose salary is less than 8000
+exists( Person),
+dateofbirth( Person, date( _, _, Year)),
+Year < 1970,
+salary( Person, Salary),
+Salary < 8000.
+
+Query: Names of families with at least two children
+family( person( _, Name, _, _), _, [_, _|_]).
+*/
+
+% total( List_of_people, Sum_of_their_salaries)
+total( [], 0).
+
+total( [Person|List], Sum) :-
+   salary( Person, S),
+   total( List, Rest),
+   Sum is S + Rest.
+
+/*
+Query: Total income of each family
+family( Husband, Wife, Children),
+total( [Husband, Wife | Children], Income).
+*/
+
+% Figure 4.3
+% A nondeterministic finite state machine
+
+final( s3).
+
+trans( s1, a, s1).
+trans( s1, a, s2).
+trans( s1, b, s1).
+trans( s2, b, s3).
+trans( s3, b, s4).
+
+silent( s2, s4).
+silent( s3, s1).
+
+% Accept the empty string
+accepts( State, []) :-
+   final( State).
+
+% Accepts by reading first symbol
+accepts( State, [X|Rest]) :-
+   trans( State, X, State1),
+   accepts( State1, Rest).
+
+% Accepts by making silent move
+accepts( State, String) :-
+   silent( State, State1),
+   accepts( State1, String).
